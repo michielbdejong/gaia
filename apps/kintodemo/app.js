@@ -2,7 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const REMOTE = "http://66925854.ngrok.com/v1/"
+// const REMOTE = "http://5847e599.ngrok.com/v1/"
+const REMOTE = "http://e32631f4.ngrok.io/v1/"
+// const REMOTE = "http://localhost:8000/v1/"
 
 function toCamelCase(str) {
   var rdashes = /-(.)/g;
@@ -62,16 +64,18 @@ var IAC = {
 
 var CryptoAPI = {
   encrypt: function(clearText, symmetricKey, iv) {
-    return IAC.request('weave-crypto', {
-      method: 'encrypt',
-      args: [clearText, symmetricKey, iv]
-    });
+    console.log('encrypt called:', clearText, symmetricKey, iv);
+   // return IAC.request('weave-crypto', {
+   //   method: 'encrypt',
+   //   args: [clearText, symmetricKey, iv]
+   // });
   },
   decrypt: function(cypherText, symmetricKey, iv) {
-    return IAC.request('weave-crypto', {
-      method: 'decrypt',
-      args: [cypherText, symmetricKey, iv]
-    });
+    console.log('decrypt called:', cypherText, symmetricKey, iv);
+    //return IAC.request('weave-crypto', {
+    //  method: 'decrypt',
+    //  args: [cypherText, symmetricKey, iv]
+    //});
   },
   generateRandomIV: function() {
     return IAC.request('weave-crypto', {
@@ -118,6 +122,7 @@ var App = {
         return this._db;
       }
       return SyncCredentials.getXClientState().then(xClientState => {
+        console.log('xClientState', xClientState);
         this._db = new Kinto({
           bucket: 'syncto',
           remote: REMOTE,
@@ -127,6 +132,7 @@ var App = {
             "X-Client-State": xClientState
           }
         });
+window.kinto = this._db;
         return this._db;
       });
     });
@@ -161,6 +167,8 @@ var App = {
     }
     return this.ensureDb().then(db => {
       this._tabs = db.collection('tabs');
+      //this._tabs = db.collection('meta');
+      //this._tabs = db.collection('crypto');
       return this._tabs;
     });
   },
@@ -174,6 +182,7 @@ var App = {
         return tabsCollection.list();
       }).then(result => {
         var tabs = result.tabs;
+        console.log('rendering tabs', tabs);
         tabs.forEach(tab => {
           var payload = JSON.parse(payload);        
           CryptoAPI.decrypt(payload.cypherText, payload.iv);
@@ -183,10 +192,13 @@ var App = {
   },
 
   syncTabs: function() {
+    console.log('Retrieving tabs collection... this may take several minutes on first run');
     this.getTabsCollection().then(tabs =>{
       console.log('Tabs ', tabs);
       tabs.sync().then(result => {
         console.log('Sync results ', result);
+        window.payload = JSON.parse(result.updated[0].payload);
+        console.log('have a look at window.payload!');
         this.renderTabs();
       }).catch(error => {
         console.error(error);
@@ -205,16 +217,24 @@ var App = {
     });
   },
 
-  storeHistoryToDS: function() {
-
+  storeHistoryToDS: function(historyCollection) {
+    this.getHistoryCollection().then(coll => {
+      return coll.list();
+    }).then(recordsData => {
+      window.historyRecords = recordsData.data;
+      SyncCrypto.decryptRecord(recordsData.data[0]).then(function(record) {
+        console.log('decrypted first record', record);
+      });
+    });
   },
 
   syncHistory: function() {
+    console.log('Retrieving history collection... this may take several minutes on first run');
     this.getHistoryCollection().then(history => {
       console.log('History ', history);
       history.sync().then(result => {
         console.log('Sync results ', result);
-        this.storeHistoryToDS();
+        this.storeHistoryToDS(result);
       });
     });
 

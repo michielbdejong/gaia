@@ -6829,6 +6829,8 @@ var Api = (function () {
         },
         records: function records(bucket, coll) {
           return urls.collection(bucket, coll) + "/records";
+          //return urls.collection(bucket, coll) + "/global";
+          //return urls.collection(bucket, coll) + "/keys";
         },
         record: function record(bucket, coll, id) {
           return urls.records(bucket, coll) + "/" + id;
@@ -7572,7 +7574,7 @@ var Collection = (function () {
     key: "importChanges",
     value: function importChanges(syncResultObject, changeObject) {
       var _this9 = this;
-
+console.log('importChanges:', syncResultObject, changeObject);
       return Promise.all(changeObject.changes.map(function (change) {
         return _this9._importChange(change); // XXX direct method ref?
       })).then(function (imports) {
