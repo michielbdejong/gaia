@@ -6829,6 +6829,8 @@ var Api = (function () {
         },
         records: function records(bucket, coll) {
           return urls.collection(bucket, coll) + "/records";
+          //return urls.collection(bucket, coll) + "/global";
+          //return urls.collection(bucket, coll) + "/keys";
         },
         record: function record(bucket, coll, id) {
           return urls.records(bucket, coll) + "/" + id;
@@ -6874,8 +6876,8 @@ var Api = (function () {
       var headers = Object.assign({}, this.optionHeaders, options.headers);
 
       if (options.lastModified) {
-        queryString = "?_since=" + options.lastModified;
-        headers["If-None-Match"] = (0, _utilsJs.quote)(options.lastModified);
+        //queryString = "?_since=" + options.lastModified;
+        //headers["If-None-Match"] = (0, _utilsJs.quote)(options.lastModified);
       }
 
       return this.fetchServerSettings().then(function (_) {
@@ -7572,7 +7574,7 @@ var Collection = (function () {
     key: "importChanges",
     value: function importChanges(syncResultObject, changeObject) {
       var _this9 = this;
-
+console.log('importChanges:', syncResultObject, changeObject);
       return Promise.all(changeObject.changes.map(function (change) {
         return _this9._importChange(change); // XXX direct method ref?
       })).then(function (imports) {
