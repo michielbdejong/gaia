@@ -1,16 +1,16 @@
-/* global SettingsHelper */
-/* global LazyLoader */
+// /* global SettingsHelper */
+// /* global LazyLoader */
 
 'use strict';
 
-const REMOTE = "http://c5f3de79.ngrok.io/v1/"
+const REMOTE = 'http://c5f3de79.ngrok.io/v1/';
 
-function toCamelCase(str) {
-  var rdashes = /-(.)/g;
-  return str.replace(rdashes, (str, p1) => {
-    return p1.toUpperCase();
-  });
-}
+//function toCamelCase(str) {
+//  var rdashes = /-(.)/g;
+//  return str.replace(rdashes, (str, p1) => {
+//    return p1.toUpperCase();
+//  });
+//}
 
 var IAC = {
   _ports: {},
@@ -61,25 +61,25 @@ var IAC = {
   }
 };
 
-var CryptoAPI = {
-  encrypt: function(clearText, symmetricKey, iv) {
-    return IAC.request('weave-crypto', {
-      method: 'encrypt',
-      args: [clearText, symmetricKey, iv]
-    });
-  },
-  decrypt: function(cypherText, symmetricKey, iv) {
-    return IAC.request('weave-crypto', {
-      method: 'decrypt',
-      args: [cypherText, symmetricKey, iv]
-    });
-  },
-  generateRandomIV: function() {
-    return IAC.request('weave-crypto', {
-      method: 'generateRandomIV'
-    });
-  }
-};
+//var CryptoAPI = {
+//  encrypt: function(clearText, symmetricKey, iv) {
+//    return IAC.request('weave-crypto', {
+//      method: 'encrypt',
+//      args: [clearText, symmetricKey, iv]
+//    });
+//  },
+//  decrypt: function(cypherText, symmetricKey, iv) {
+//    return IAC.request('weave-crypto', {
+//      method: 'decrypt',
+//      args: [cypherText, symmetricKey, iv]
+//    });
+//  },
+//  generateRandomIV: function() {
+//    return IAC.request('weave-crypto', {
+//      method: 'generateRandomIV'
+//    });
+//  }
+//};
 
 var SyncCredentials = {
   getKeys() {
@@ -125,24 +125,35 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       if (this.fswc) {
         return Promise.resolve();
       }
-      SyncCredentials.getKeys().then(function(credentials) {
+      var credentials;
+      SyncCredentials.getKeys().then(function(creds) {
+        credentials = creds;
         return this.ensureDb();
       }.bind(this)).then(function(db) {
-        return db.collection('crypto');
+        return db.collection('crypto').then(function(coll) {
+         console.log('got crypto collection', coll);
+         coll.sync({strategy: 'server wins'}).then(function() {
+           console.log('synced crypto collection', coll);
+           return coll;
+         });
+        });
       }).then(function(cryptoCollection) {
+        console.log('getting keys record', cryptoCollection);
         return cryptoCollection.get('keys');
       }).then(function(cryptoKeysRecord) {
-        return JSON.parse(cryptoKeys.data.payload);
+        return JSON.parse(cryptoKeysRecord.data.payload);
       }).then(function(cryptoKeys) {
-        this.fswc = new FxSyncWebCrypto();
-        return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext, cryptoKeys.IV, cryptoKeys.hmac);
+        this.fswc = new window.FxSyncWebCrypto();
+        return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext,
+                                 cryptoKeys.IV, cryptoKeys.hmac);
       }.bind(this));
     },
 
     installTransformer: function(kintoCollection, collectionName) {
       this.ensureFswc().then(function() {
         kintoCollection.use(function(record) {
-          return this.fswc.signAndEncrypt(JSON.stringify(record), collectionName);
+          return this.fswc.signAndEncrypt(JSON.stringify(record),
+                                          collectionName);
         }, function(recordEnc) {
           return this.fswc.verifyAndDecrypt(recordEnc, collectionName);
         });
@@ -155,13 +166,13 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
           return this._db;
         }
         return SyncCredentials.getXClientState().then(xClientState => {
-          this._db = new Kinto({
+          this._db = new window.Kinto({
             bucket: 'syncto',
             remote: REMOTE,
             headers: {
-              "Authorization": "BrowserID " + assertion,
+              'Authorization': 'BrowserID ' + assertion,
               // XXX use generated client state
-              "X-Client-State": xClientState
+              'X-Client-State': xClientState
             }
           });
           return this._db;
@@ -207,17 +218,17 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       // Ideally we should store the data unencrypted instead of doing
       // the decryption while rendering it on the screen, but whatever,
       // this is just a prototype...
-      SyncCredentials.getKeys().then(credentials => {
+      //SyncCredentials.getKeys().then(credentials => {
         this.getTabsCollection().then(tabsCollection => {
           return tabsCollection.list();
-        }).then(result => {
-          var tabs = result.tabs;
-          tabs.forEach(tab => {
-            var payload = JSON.parse(payload);
-            CryptoAPI.decrypt(payload.cypherText, payload.iv);
-          });
+        //}).then(result => {
+         // var tabs = result.tabs;
+         // tabs.forEach(tab => {
+         //   var payload = JSON.parse(payload);
+         //   CryptoAPI.decrypt(payload.cypherText, payload.iv);
+         // });
         });
-      });
+     // });
     },
 
     syncTabs: function() {
@@ -241,7 +252,8 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         SyncCredentials.getKeys().then(credentials => {
           console.log('credentials');
           console.log(credentials);
-          document.querySelector('#sync-account').textContent = credentials.email;
+          document.querySelector('#sync-account').textContent =
+              credentials.email;
         });
 
         this._history = db.collection('history');
@@ -291,7 +303,8 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
      },
 
     syncHistory: function() {
-      console.log('Retrieving history collection... this may take several minutes on first run');
+      console.log('Retrieving history collection... ' +
+                  'this may take several minutes on first run');
       this.getHistoryCollection().then(history => {
         console.log('History ', history);
         history.sync().then(result => {
@@ -305,8 +318,8 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       console.log('testHistory');
       /*
       Object {
-        url: "https://www.mozilla.org/en-US/",
-        title: "",
+        url: 'https://www.mozilla.org/en-US/',
+        title: '',
         icons: Object,
         frecency: 3,
         visits: Array[2],   #### Array [ 1438614210311, 1438450706238 ]
@@ -316,7 +329,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       */
       var place = {
         url: 'http://www.mozilla.org/en-US/',
-        title: "",
+        title: '',
         frecency: 3,
         visits: [ 1438614210311, 1438450706238 ],
         visited: 1438614210311
@@ -340,7 +353,7 @@ navigator.mozL10n.once(function() {
     //for debugging:
     console.log('setting window.FxSync and window.kB');
     window.FxSync = FxSync;
-    SyncCredentials.getKeys().then(credentials => { window.kB = credentials.kB});
-
+    SyncCredentials.getKeys().then(credentials => 
+                                   { window.kB = credentials.kB; });
   });
 });
