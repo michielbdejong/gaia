@@ -3,7 +3,7 @@
 
 'use strict';
 
-const REMOTE = "http://69b5bd29.ngrok.io/v1/"
+const REMOTE = "http://c5f3de79.ngrok.io/v1/"
 
 function toCamelCase(str) {
   var rdashes = /-(.)/g;
@@ -122,6 +122,16 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       SyncCrypto.assignApp(FxSync);
     },
 
+    installTransformer: function(kintoCollection, collectionName) {
+      this.ensureFswc().then(function() {
+        kintoCollection.use(function(record) {
+          return this.fswc.signAndEncrypt(JSON.stringify(record), collectionName);
+        }, function(recordEnc) {
+          return this.fswc.verifyAndDecrypt(recordEnc, collectionName);
+        });
+      });
+    },
+
     ensureDb: function(assertion) {
       return this.getAssertion().then(assertion => {
         if (this._db) {
@@ -171,6 +181,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       }
       return this.ensureDb().then(db => {
         this._tabs = db.collection('tabs');
+        this.installTransformer(this._tabs, 'tabs');
         return this._tabs;
       });
     },
@@ -217,6 +228,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         });
 
         this._history = db.collection('history');
+        this.installTransformer(this._history', 'history');
         return this._history;
       });
     },
