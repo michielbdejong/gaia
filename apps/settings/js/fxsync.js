@@ -123,11 +123,11 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
 
     ensureFswc: function() {
       if (this.fswc) {
-        return;
+        return Promise.resolve();
       }
       SyncCredentials.getKeys().then(function(credentials) {
         return this.ensureDb();
-      }).then(function(db) {
+      }.bind(this)).then(function(db) {
         return db.collection('crypto');
       }).then(function(cryptoCollection) {
         return cryptoCollection.get('keys');
@@ -136,7 +136,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       }).then(function(cryptoKeys) {
         this.fswc = new FxSyncWebCrypto();
         return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext, cryptoKeys.IV, cryptoKeys.hmac);
-      });
+      }.bind(this));
     },
 
     installTransformer: function(kintoCollection, collectionName) {
@@ -256,9 +256,9 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       }).then(recordsData => {
         var historyRecords = recordsData.data;
         var partialRecoreds = historyRecords.slice(0, 10);
-        partialRecoreds.forEach(function (encryptedRecord){
+        partialRecoreds.forEach(function (record){
 
-          SyncCrypto.decryptRecord(encryptedRecord).then(function(record) {
+          //SyncCrypto.decryptRecord(encryptedRecord).then(function(record) {
             console.log('decrypted first record', record);
 
             if(!record.histUri || !record.visits || !record.visits[0]){
@@ -284,7 +284,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
             });
             document.querySelector('#sync-time').textContent =
               new Date().toString();
-          });
+         // });
 
         });
       });
@@ -336,5 +336,11 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
 navigator.mozL10n.once(function() {
   require(['fxsync'], function(FxSync) {
     FxSync.init();
+
+    //for debugging:
+    console.log('setting window.FxSync and window.kB');
+    window.FxSync = FxSync;
+    SyncCredentials.getKeys().then(credentials => { window.kB = credentials.kB});
+
   });
 });

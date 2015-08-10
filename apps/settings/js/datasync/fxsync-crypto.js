@@ -8,7 +8,7 @@
   const HKDF_INFO_STR = 'identity.mozilla.com/picl/v1/oldsync';
  
   // constructor
-  window.FirefoxSyncWebCrypto = function() {
+  window.FxSyncWebCrypto = function() {
     // Basic check for presence of WebCrypto
     if (!window || !window.crypto || !window.crypto.subtle) {
       throw new Error('This environment does not support WebCrypto');
@@ -50,7 +50,7 @@
   /*
    * setKeys
    */
-  window.FirefoxSyncWebCrypto.prototype.setKeys = function(kB, cryptoKeysCiphertext, cryptoKeysIV, cryptoKeysHmac) { 
+  window.FxSyncWebCrypto.prototype.setKeys = function(kB, cryptoKeysCiphertext, cryptoKeysIV, cryptoKeysHmac) {
     var kBByteArray, cryptoKeysCiphertextByteArray, cryptoKeysIVByteArray, cryptoKeysHmacByteArray;
 
     // Input checking
@@ -101,7 +101,7 @@
     });
   }
 
-  window.FirefoxSyncWebCrypto.prototype.verifyAndDecryptRecord = function(payload, collectionName) {
+  window.FxSyncWebCrypto.prototype.verifyAndDecryptRecord = function(payload, collectionName) {
     var payload, keyBundle;
     try {
       payload = JSON.parse(record.payload);
@@ -139,7 +139,4 @@
       });
     });
   }
-
-  //...
-  window.FirefoxSyncWebCrypto = FirefoxSyncCrypto;
 })(window);
