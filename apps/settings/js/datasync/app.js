@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const REMOTE = "http://69b5bd29.ngrok.io/v1/"
+const REMOTE = "http://c5f3de79.ngrok.io/v1/"
 
 function toCamelCase(str) {
   var rdashes = /-(.)/g;
@@ -60,26 +60,6 @@ var IAC = {
   }
 };
 
-var CryptoAPI = {
-  encrypt: function(clearText, symmetricKey, iv) {
-    return IAC.request('weave-crypto', {
-      method: 'encrypt',
-      args: [clearText, symmetricKey, iv]
-    });
-  },
-  decrypt: function(cypherText, symmetricKey, iv) {
-    return IAC.request('weave-crypto', {
-      method: 'decrypt',
-      args: [cypherText, symmetricKey, iv]
-    });
-  },
-  generateRandomIV: function() {
-    return IAC.request('weave-crypto', {
-      method: 'generateRandomIV'
-    });
-  }
-};
-
 var SyncCredentials = {
   getKeys() {
     if (this._credentials) {
@@ -121,6 +101,16 @@ var App = {
     this.syncTabsButton.addEventListener('click', App.syncTabs.bind(App));
     this.syncHistoryButton.addEventListener('click', App.syncHistory.bind(App));
   },
+
+  installTransformer: function(kintoCollection, collectionName) {
+    this.ensureFswc().then(function() {
+      kintoCollection.use(function(record) {
+        return this.fswc.signAndEncrypt(JSON.stringify(record), collectionName);
+      }, function(recordEnc) {
+        return this.fswc.verifyAndDecrypt(recordEnc, collectionName);
+      });
+    });
+  }
 
   ensureDb: function(assertion) {
     return this.getAssertion().then(assertion => {
@@ -171,6 +161,7 @@ var App = {
     }
     return this.ensureDb().then(db => {
       this._tabs = db.collection('tabs');
+      this.installTransformer(this._tabs);
       return this._tabs;
     });
   },
@@ -186,7 +177,7 @@ var App = {
         var tabs = result.tabs;
         tabs.forEach(tab => {
           var payload = JSON.parse(payload);
-          CryptoAPI.decrypt(payload.cypherText, payload.iv);
+          //CryptoAPI.decrypt(payload.cypherText, payload.iv);
         });
       });
     });
@@ -211,6 +202,7 @@ var App = {
     }
     return this.ensureDb().then(db => {
       this._history = db.collection('history');
+      this.installTransformer(this._history);
       return this._history;
     });
   },
@@ -220,9 +212,6 @@ var App = {
       return coll.list();
     }).then(recordsData => {
       window.historyRecords = recordsData.data;
-      SyncCrypto.decryptRecord(recordsData.data[0]).then(function(record) {
-        console.log('decrypted first record', record);
-      });
     });
    },
 
