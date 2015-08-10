@@ -119,7 +119,24 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       this.syncButton = document.querySelector('#sync-button');
       this.syncButton.
         addEventListener('click', FxSync.syncHistory.bind(FxSync));
-      SyncCrypto.assignApp(FxSync);
+    },
+
+    ensureFswc: function() {
+      if (this.fswc) {
+        return;
+      }
+      SyncCredentials.getKeys().then(function(credentials) {
+        return this.ensureDb();
+      }).then(function(db) {
+        return db.collection('crypto');
+      }).then(function(cryptoCollection) {
+        return cryptoCollection.get('keys');
+      }).then(function(cryptoKeysRecord) {
+        return JSON.parse(cryptoKeys.data.payload);
+      }).then(function(cryptoKeys) {
+        this.fswc = new FxSyncWebCrypto();
+        return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext, cryptoKeys.IV, cryptoKeys.hmac);
+      });
     },
 
     installTransformer: function(kintoCollection, collectionName) {
@@ -228,7 +245,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         });
 
         this._history = db.collection('history');
-        this.installTransformer(this._history', 'history');
+        this.installTransformer(this._history, 'history');
         return this._history;
       });
     },
