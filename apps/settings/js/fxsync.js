@@ -126,7 +126,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         return Promise.resolve();
       }
       var credentials;
-      SyncCredentials.getKeys().then(function(creds) {
+      return SyncCredentials.getKeys().then(function(creds) {
         credentials = creds;
         return this.ensureDb();
       }.bind(this)).then(function(db) {
@@ -249,6 +249,8 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         return Promise.resolve(this._history);
       }
       return this.ensureDb().then(db => {
+        window.dbFromGetHist = db;
+        console.log('set window.dbFromGetHist');
         SyncCredentials.getKeys().then(credentials => {
           console.log('credentials');
           console.log(credentials);
