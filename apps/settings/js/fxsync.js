@@ -121,6 +121,40 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         addEventListener('click', FxSync.syncHistory.bind(FxSync));
     },
 
+    getCryptoKeys: function() {
+      return this.ensureDb().then(function(db) {
+        console.log('db from ensureDb', db);
+        console.log('db.collection(\'crypto\') from ensureDb', db.collection('crypto'));
+        var coll = db.collection('crypto');
+        return coll.sync({strategy: 'server wins'}).then(function() {
+         console.log('synced crypto collection', coll);
+         return coll;
+        });
+      }).then(function(cryptoCollection) {
+        console.log('getting keys record', cryptoCollection);
+        return cryptoCollection.get('keys').then(function(cryptoKeysRecord) {
+          if (typeof cryptoKeysRecord != 'object' || !cryptoKeysRecord.data ||
+              !cryptoKeysRecord.data.payload) {
+            console.log('cryptoKeysRecord', cryptoKeysRecord);
+            return Promise.reject('got a cryptoKeysRecord but no payload data');
+          }
+          var parsedPayload;
+          try {
+            parsedPayload = JSON.parse(cryptoKeysRecord.data.payload);
+          } catch(e) {
+            return Promise.reject('cryptoKeysRecord payload data is not JSON');
+          }
+          return parsedPayload;
+        }, function(err) {
+          console.log('could not find record keys in collection crypto', err);
+          return Promise.reject('could not find record keys in collection crypto');
+        });
+      }, function(err) {
+        console.log('could not get crypto collection', err);
+        return Promise.reject('could not get crypto collection');
+      });
+    },
+
     ensureFswc: function() {
       if (this.fswc) {
         return Promise.resolve();
@@ -128,21 +162,8 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       var credentials;
       return SyncCredentials.getKeys().then(function(creds) {
         credentials = creds;
-        return this.ensureDb();
-      }.bind(this)).then(function(db) {
-        return db.collection('crypto').then(function(coll) {
-         console.log('got crypto collection', coll);
-         coll.sync({strategy: 'server wins'}).then(function() {
-           console.log('synced crypto collection', coll);
-           return coll;
-         });
-        });
-      }).then(function(cryptoCollection) {
-        console.log('getting keys record', cryptoCollection);
-        return cryptoCollection.get('keys');
-      }).then(function(cryptoKeysRecord) {
-        return JSON.parse(cryptoKeysRecord.data.payload);
-      }).then(function(cryptoKeys) {
+        return this.getCryptoKeys();
+      }.bind(this)).then(function(cryptoKeys) {
         this.fswc = new window.FxSyncWebCrypto();
         return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext,
                                  cryptoKeys.IV, cryptoKeys.hmac);
