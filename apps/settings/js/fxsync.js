@@ -124,7 +124,6 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
     getCryptoKeys: function() {
       return this.ensureDb().then(function(db) {
         console.log('db from ensureDb', db);
-        console.log('db.collection(\'crypto\') from ensureDb', db.collection('crypto'));
         var coll = db.collection('crypto');
         return coll.sync({strategy: 'server wins'}).then(function() {
          console.log('synced crypto collection', coll);
@@ -147,7 +146,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
           return parsedPayload;
         }, function(err) {
           console.log('could not find record keys in collection crypto', err);
-          return Promise.reject('could not find record keys in collection crypto');
+          return Promise.reject('could not find keys record in crypto coll');
         });
       }, function(err) {
         console.log('could not get crypto collection', err);
@@ -167,7 +166,9 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         this.fswc = new window.FxSyncWebCrypto();
         return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext,
                                  cryptoKeys.IV, cryptoKeys.hmac);
-      }.bind(this));
+      }.bind(this), function(err) {
+        window.alert('Sorry, no crypto keys found on this FxSync account');
+      });
     },
 
     installTransformer: function(kintoCollection, collectionName) {
