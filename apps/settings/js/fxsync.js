@@ -119,10 +119,10 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
     constructor(setCollectionName, setFswc) {
       this.collectionName = setCollectionName;
       this.fswc = setFswc;
-    },
+    }
     encode(record) {
       return this.fswc.signAndEncrypt(record, this.collectionName);
-    },
+    }
     decode(record) {
       return this.fswc.verifyAndDecrypt(record, this.collectionName);
     }
@@ -173,13 +173,13 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         return Promise.resolve();
       }
       var credentials;
-      return SyncCredentials.getKeys().then(function(creds) {
+      return SyncCredentials.getKeys().then(creds => {
         credentials = creds;
         return this.getCryptoKeys();
-      }.bind(this)).then(function(cryptoKeys) {
+      }).then(cryptoKeys => {
         this.fswc = new window.FxSyncWebCrypto();
         return this.fswc.setKeys(credentials.kB, cryptoKeys);
-      }.bind(this), function(err) {
+      }, function(err) {
         window.alert('Sorry, no crypto keys found on this FxSync account');
       });
     },
@@ -240,9 +240,9 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       return this.ensureDb().then(db => {
         this._tabs = db.collection('tabs');
         return this.installTransformer(this._tabs, 'tabs');
-      }.bind(this)).then(function() {
+      }).then(() => {
         return this._tabs;
-      }.bind(this));
+      });
     },
 
     renderTabs: function() {
@@ -291,9 +291,9 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
 
         this._history = db.collection('history');
         return this.installTransformer(this._history, 'history');
-      }.bind(this)).then(function() {
+      }).then(() => {
         return this._history;
-      }.bind(this));
+      });
     },
 
     storeHistoryToDS: function(historyCollection) {
