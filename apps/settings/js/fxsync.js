@@ -114,6 +114,20 @@ var HistoryAdapter = {
 
 define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
 ], function(SettingsUtils, SettingsListener) {
+
+  class MyAsyncRemoteTransformer extends RemoteTransformer {
+    constructor(setCollectionName, setFswc) {
+      this.collectionName = setCollectionName;
+      this.fswc = setFswc;
+    },
+    encode(record) {
+      return this.fswc.signAndEncrypt(record, this.collectionName);
+    },
+    decode(record) {
+      return this.fswc.verifyAndDecrypt(record, this.collectionName);
+    }
+  }
+
   var FxSync = {
     init: function fmd_init() {
       this.syncButton = document.querySelector('#sync-button');
@@ -164,21 +178,15 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         return this.getCryptoKeys();
       }.bind(this)).then(function(cryptoKeys) {
         this.fswc = new window.FxSyncWebCrypto();
-        return this.fswc.setKeys(credentials.kB, cryptoKeys.ciphertext,
-                                 cryptoKeys.IV, cryptoKeys.hmac);
+        return this.fswc.setKeys(credentials.kB, cryptoKeys);
       }.bind(this), function(err) {
         window.alert('Sorry, no crypto keys found on this FxSync account');
       });
     },
 
     installTransformer: function(kintoCollection, collectionName) {
-      this.ensureFswc().then(function() {
-        kintoCollection.use(function(record) {
-          return this.fswc.signAndEncrypt(JSON.stringify(record),
-                                          collectionName);
-        }, function(recordEnc) {
-          return this.fswc.verifyAndDecrypt(recordEnc, collectionName);
-        });
+      return this.ensureFswc().then(function() {
+        return coll.use(new MyAsyncRemoteTransformer(collectionName, this.fswc));
       });
     },
 
@@ -231,9 +239,10 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
       }
       return this.ensureDb().then(db => {
         this._tabs = db.collection('tabs');
-        this.installTransformer(this._tabs, 'tabs');
+        return this.installTransformer(this._tabs, 'tabs');
+      }.bind(this)).then(function() {
         return this._tabs;
-      });
+      }.bind(this));
     },
 
     renderTabs: function() {
@@ -281,9 +290,10 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         });
 
         this._history = db.collection('history');
-        this.installTransformer(this._history, 'history');
+        return this.installTransformer(this._history, 'history');
+      }.bind(this)).then(function() {
         return this._history;
-      });
+      }.bind(this));
     },
 
     storeHistoryToDS: function(historyCollection) {
