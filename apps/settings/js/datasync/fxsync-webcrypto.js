@@ -190,7 +190,7 @@
     try {
       recordEnc = JSON.parse(payload);
     } catch(e) {
-      return Promise.reject('Payload is not a JSON string');
+      return Promise.reject('Payload is not a JSON string', payload);
     }
     try {
       keyBundle = this.selectKeyBundle(collectionName);

@@ -124,11 +124,19 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
     }
     encode(record) {
       console.log('encoding record in ' + this.collectionName + ' transformer', record);
-      return this.fswc.signAndEncrypt(record, this.collectionName);
+      return this.fswc.signAndEncryptRecord(record.payload, this.collectionName).then(payloadEnc => {
+        console.log('encrypted', record.payload, 'as', payloadEnc);
+        record.payload = payloadEnc;
+        return record;
+      });
     }
     decode(record) {
       console.log('decoding record in ' + this.collectionName + ' transformer', record);
-      return this.fswc.verifyAndDecrypt(record, this.collectionName);
+      return this.fswc.verifyAndDecryptRecord(record.payload, this.collectionName).then(payloadDec => {
+        console.log('decrypted', record.payload, 'as', payloadDec);
+        record.payload = payloadDec;
+        return record;
+      });
     }
   }
 
