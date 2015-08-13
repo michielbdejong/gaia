@@ -347,23 +347,23 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         partialRecoreds.forEach(function (record){
 
           //SyncCrypto.decryptRecord(encryptedRecord).then(function(record) {
-            console.log('decrypted first record', record);
+            console.log('decrypted a record', record);
 
-            if(!record.histUri || !record.visits || !record.visits[0]){
+            if(!record.payload || !record.payload.histUri || !record.payload.visits || !record.payload.visits[0]){
               console.log('invalid history: ', record);
               return ;
             }
 
             var visits = [];
-            record.visits.forEach(function (elem){
+            record.payload.visits.forEach(function (elem){
               visits.push(elem.date);
             });
 
             var place = {
-              url: record.histUri,
-              title: record.title,
+              url: record.payload.histUri,
+              title: record.payload.title,
               visits: visits,
-              visited: record.visits[0]
+              visited: record.payload.visits[0]
             };
             HistoryAdapter.addPlace(place).then(function (d){
               console.log(d);
