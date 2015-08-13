@@ -3,7 +3,8 @@
 
 'use strict';
 
-const REMOTE = 'http://1625dd81.ngrok.io/v1/';
+//const REMOTE = 'http://1625dd81.ngrok.io/v1/';
+const REMOTE = 'http://localhost:8000/v1/';
 
 //function toCamelCase(str) {
 //  var rdashes = /-(.)/g;
@@ -119,6 +120,7 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
     constructor(setCollectionName, setFswc) {
       this.collectionName = setCollectionName;
       this.fswc = setFswc;
+      console.log('constructed transformer for ' + setCollectionName, setFswc, this);
     }
     encode(record) {
       console.log('encoding record in ' + this.collectionName + ' transformer', record);
@@ -138,10 +140,24 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
     },
 
     getCryptoKeys: function() {
+      if (this._cryptoKeys) {
+        return Promise.resolve(this._cryptoKeys);
+      } else {
+        return this.fetchCryptoKeys().then(cryptoKeys => {
+          this._cryptoKeys = cryptoKeys;
+          return this._cryptoKeys;
+        });
+      }
+    },
+
+    fetchCryptoKeys: function() {
       return this.ensureDb().then(function(db) {
         console.log('db from ensureDb', db);
         var coll = db.collection('crypto');
-        return coll.sync({strategy: 'server wins'}).then(function() {
+        return coll.list().then(list => {
+          console.log('crypto coll list before sync');
+          return coll.sync({strategy: 'server wins'})
+        }).then(function() {
          console.log('synced crypto collection', coll);
          return coll;
         });
@@ -201,8 +217,10 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
     },
 
     installTransformer: function(kintoCollection, collectionName) {
-      return this.ensureFswc().then(function() {
-        return coll.use(new MyAsyncRemoteTransformer(collectionName, this.fswc));
+      console.log('perparing to install transformer for ' + collectionName);
+      return this.ensureFswc().then(() => {
+        console.log('installing transformer for ' + collectionName);
+        return kintoCollection.use(new MyAsyncRemoteTransformer(collectionName, this.fswc));
       });
     },
 
