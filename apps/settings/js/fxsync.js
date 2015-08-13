@@ -115,15 +115,17 @@ var HistoryAdapter = {
 define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
 ], function(SettingsUtils, SettingsListener) {
 
-  class MyAsyncRemoteTransformer extends RemoteTransformer {
+  class MyAsyncRemoteTransformer extends Kinto.transformers.RemoteTransformer {
     constructor(setCollectionName, setFswc) {
       this.collectionName = setCollectionName;
       this.fswc = setFswc;
     }
     encode(record) {
+      console.log('encoding record in ' + this.collectionName + ' transformer', record);
       return this.fswc.signAndEncrypt(record, this.collectionName);
     }
     decode(record) {
+      console.log('decoding record in ' + this.collectionName + ' transformer', record);
       return this.fswc.verifyAndDecrypt(record, this.collectionName);
     }
   }
