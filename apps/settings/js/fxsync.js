@@ -147,7 +147,21 @@ define('fxsync', ['modules/settings_utils', 'shared/settings_listener'
         });
       }).then(function(cryptoCollection) {
         console.log('getting keys record', cryptoCollection);
-        return cryptoCollection.get('keys').then(function(cryptoKeysRecord) {
+
+        // Original code:
+        //return cryptoCollection.get('keys').then(function(cryptoKeysRecord) {
+        //
+
+        // Alternative code to work around https://github.com/mozilla-services/syncto/issues/6
+        return cryptoCollection.list().then(cryptoCollRecords => {
+          return {
+            data: {
+              payload: cryptoCollRecords.data[0].payload
+            }
+          };
+        }).then(function(cryptoKeysRecord) {
+        //
+
           if (typeof cryptoKeysRecord != 'object' || !cryptoKeysRecord.data ||
               !cryptoKeysRecord.data.payload) {
             console.log('cryptoKeysRecord', cryptoKeysRecord);
