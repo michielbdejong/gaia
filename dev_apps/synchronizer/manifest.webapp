@@ -1,0 +1,6 @@
+{
+  "name": "Synchronizer",
+  "description": "Syncs data with Firefox Sync",
+  "type": "certified",
+  "launch_path": "/index.html"
+}
