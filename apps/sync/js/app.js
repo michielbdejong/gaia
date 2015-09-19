@@ -49,11 +49,14 @@ var App = Object.freeze((() => {
       *                         * URL (of the Syncto server)
       */
     handleSyncRequest(request) {
+      console.log('Loading main scripts');
       return loadMainScripts().then(() => {
+        console.log('Loading adapters', request.collections);
         return Promise.all(request.collections.map(collectionName => {
           return loadAdapterScript(collectionName);
         }));
       }).then(() => {
+        console.log('Constructing SyncEngine');
         var se = new SyncEngine({
           kB: request.keys.kB,
           URL: request.URL,
@@ -61,8 +64,9 @@ var App = Object.freeze((() => {
           adapters: DataAdapters
         });
 
+        console.log('SyncEngine#syncNow (watch Network tab)');
         return se.syncNow(request.collections);
-      });
+      }).catch(err => console.error('handleSyncRequest error', err));
     }
   };
 })());
