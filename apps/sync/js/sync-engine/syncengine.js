@@ -201,10 +201,9 @@ uld be a Function`);
         }
       });
       var addControlCollection = (collectionName, keyName) => {
+        var idSchema = new ControlCollectionIdSchema(collectionName, keyName);
         this._controlCollections[collectionName] =
-            kinto.collection(collectionName);
-        this._controlCollections[collectionName].use(
-            new ControlCollectionIdSchema(collectionName, keyName));
+            kinto.collection(collectionName, { idSchema });
       };
       addControlCollection('meta', 'global');
       addControlCollection('crypto', 'keys');
@@ -324,11 +323,12 @@ rse crypto/keys payload as JSON`));
     _createCollections: function() {
       for (var collectionName in this._adapters) {
         this._collections[collectionName] = this._kinto.collection(
-            collectionName);
-        this._collections[collectionName].use(new FxSyncIdSchema(
-            collectionName));
-        this._collections[collectionName].use(new WebCryptoTransformer(
-            collectionName, this._fswc));
+            collectionName, {
+              idSchema: new FxSyncIdSchema(collectionName),
+              remoteAdapters: [
+                new WebCryptoTransformer(collectionName, this._fswc)
+              ]
+            });
       }
     },
 
