@@ -118,18 +118,18 @@ var HistoryHelper = (() => {
 
     var id = place.url;
     var revisionId;
-    return _ensureStore().then(placesStore => {
-      revisionId = placesStore.revisionId;
-      return placesStore.get(id);
-    }).then(existedPlace => {
-      // Bug 1208352 - PlacesDS accessing code should be extracted to a shared
-      // code to prevent drifting out of sync from different piece codes.
-      if (existedPlace) {
-        var newPlace = mergeRecordsToDataStore(existedPlace, place);
-        return placesStore.put(newPlace, id, revisionId);
-      }
-      return placesStore.add(place, id, revisionId).then(() => {
-        return setDataStoreId(place.fxsyncId, id, userid);
+    return _ensureStore().then(store => {
+      revisionId = store.revisionId;
+      return store.get(id).then(existedPlace => {
+        // Bug 1208352 - PlacesDS accessing code should be extracted to a shared
+        // code to prevent drifting out of sync from different piece codes.
+        if (existedPlace) {
+          var newPlace = mergeRecordsToDataStore(existedPlace, place);
+          return store.put(newPlace, id, revisionId);
+        }
+        return store.add(place, id, revisionId).then(() => {
+          return setDataStoreId(place.fxsyncId, id, userid);
+        });
       });
     }).catch(e => {
       console.error(e);
@@ -154,8 +154,8 @@ var HistoryHelper = (() => {
     return getDataStoreId(fxsyncId, userid).then(id => {
       url = id;
       return _ensureStore();
-    }).then(placesStore => {
-      return placesStore.remove(url);
+    }).then(store => {
+      return store.remove(url);
     });
   }
 
