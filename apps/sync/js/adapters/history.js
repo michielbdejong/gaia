@@ -154,6 +154,10 @@ var HistoryHelper = (() => {
   function deletePlace(fxsyncId, userid) {
     var url;
     return getDataStoreId(fxsyncId, userid).then(id => {
+      if (!id) {
+        console.warn('No DataStore ID corresponded to FxSyncID', fxsyncId);
+        return Promise.resolve();
+      }
       url = id;
       return _ensureStore();
     }).then(store => {
