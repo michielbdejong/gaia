@@ -23,7 +23,7 @@
 */
 
 require('/shared/test/unit/mocks/mock_navigator_datastore.js');
-require('/apps/system/test/unit/mock_asyncStorage.js');
+require('/shared/test/unit/mocks/mock_async_storage.js');
 
 requireApp('sync/test/unit/sync-engine/adapter-mock.js');
 requireApp('sync/test/unit/fixtures/synctoserver.js');
@@ -52,7 +52,6 @@ suite('SyncEngine', function() {
 
   suiteTeardown(function() {
     navigator.getDataStores = realDatastore;
-    window.asyncStorage.mTeardown();
     window.asyncStorage = realAsyncStorage;
   });
 
@@ -191,49 +190,51 @@ ld be a Function`);
     ['history', 'bookmarks'].forEach(store => {
       test(`Clears old data after ${store} DS was cleared`, function(done) {
         new Promise(resolve => {
-          console.log('clear');
           window.asyncStorage.clear(() => {
-            console.log('set');
             window.asyncStorage.setItem('foo', 'bar', () => {
-              console.log('set');
               window.asyncStorage.setItem(SYNC_USERID, 'previousUser', () => {
-                console.log('resolve');
                 resolve();
               });
             });
           });
         }).then(() => {
-          console.log('then');
-          // var asClearSpy = this.sinon.spy(window.asyncStorage, 'clear');
+          console.log('here we go 1');
+          var asClearSpy = this.sinon.spy(window.asyncStorage, 'clear');
+          console.log('here we go 2');
+          var asGetSpy = this.sinon.spy(window.asyncStorage, 'getItem');
+          console.log('here we go 3');
           var realGetDataStores = navigator.getDataStores;
-          console.log('mocking');
-          // navigator.getDataStores = function(dsName) {
-          //   console.log('mocked getDataStores', dsName);
-          //   var ds = new MockDatastoreObj();
-          //   console.log('constructing DS for ', dsName);
-          //   if (dsName === store) {
-          //     ds._tasks = [
-          //       {
-          //         operation: 'clear',
-          //         id: 0,
-          //         data: {}
-          //       },
-          //       {
-          //         operation: 'done',
-          //         id: 0,
-          //         data: {}
-          //       },
-          //     ];
-          //   }
-          //   return Promise.resolve([ ds ]);
-          // };
+          console.log('here we go 4');
+          navigator.getDataStores = function(dsName) {
+            console.log('mocked getDataStores', dsName);
+            var ds = new MockDatastoreObj();
+            console.log('constructing DS for ', dsName);
+            if (dsName === store) {
+              ds._tasks = [
+                {
+                  operation: 'clear',
+                  id: 0,
+                  data: {}
+                },
+                {
+                  operation: 'done',
+                  id: 0,
+                  data: {}
+                },
+              ];
+            }
+            return Promise.resolve([ ds ]);
+          };
           console.log('constructing');
           var se = new SyncEngine(SynctoServerFixture.syncEngineOptions);
           console.log('syncing');
           se.syncNow({ history: {} }).then(function() {
-            // expect(asyncStorageSpy.calledWith(SYNC_USERID,
-            //     SynctoServerFixture.xClientState)).to.equal(true);
-                navigator.getDataStores = realGetDataStores;
+            console.log('checking', asGetSpy.calledWith(SYNC_USERID,
+                SynctoServerFixture.xClientState), asClearSpy.called());
+            expect(asGetSpy.calledWith(SYNC_USERID,
+                SynctoServerFixture.xClientState)).to.equal(true);
+            expect(asClearSpy.called()).to.equal(true);
+            navigator.getDataStores = realGetDataStores;
             done();
           });
         });
@@ -241,11 +242,11 @@ ld be a Function`);
     });
 
     test(`Does not clear old data if no DS was cleared`, function(done) {
-      var asyncStorageSpy = this.sinon.spy(window.asyncStorage, 'setItem');
+      var asClearSpy = this.sinon.spy(window.asyncStorage, 'clear');
       var se = new SyncEngine(SynctoServerFixture.syncEngineOptions);
       se.syncNow({ history: {} }).then(function() {
-        expect(asyncStorageSpy.calledWith(SYNC_USERID,
-            SynctoServerFixture.xClientState)).to.equal(true);
+        expect(asClearSpy.called()).to.equal(false);
+        navigator.getDataStores = realGetDataStores;
         done();
       });
     });
