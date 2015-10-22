@@ -12,7 +12,6 @@
   HistoryHelper,
   MockasyncStorage,
   MockDatastore,
-  MockLazyLoader,
   MockNavigatorDatastore,
   require,
   requireApp,
@@ -25,7 +24,6 @@
   test
 */
 
-require('/apps/music/test/unit/mock_lazy_loader.js');
 require('/shared/test/unit/mocks/mock_navigator_datastore.js');
 require('/apps/system/test/unit/mock_asyncStorage.js');
 requireApp('sync/js/adapters/history.js');
@@ -33,7 +31,7 @@ requireApp('sync/js/adapters/history.js');
 window.DataAdapters = {};
 
 suite('sync/adapters/history >', () => {
-  var realDatastore, realLazyLoader, realAsyncStorage, testCollectionData;
+  var realDatastore, realAsyncStorage, testCollectionData;
   var updatePlacesSpy;
   var kintoCollection = {
     list() {
@@ -89,15 +87,10 @@ suite('sync/adapters/history >', () => {
 
     realAsyncStorage = window.asyncStorage;
     window.asyncStorage = MockasyncStorage;
-
-    realLazyLoader = window.LazyLoader;
-    window.LazyLoader = MockLazyLoader;
   });
 
   suiteTeardown(() => {
     navigator.getDataStores = realDatastore;
-
-    window.LazyLoader = realLazyLoader;
 
     window.asyncStorage = realAsyncStorage;
   });

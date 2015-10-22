@@ -51,6 +51,7 @@
 'use strict';
 
 /* global
+  asyncStorage,
   crypto,
   FxSyncWebCrypto,
   Kinto
@@ -59,6 +60,8 @@
 /* exported
   SyncEngine
 */
+
+const SYNC_USERID = 'sync::userid';
 
 var SyncEngine = (function() {
   var createFxSyncIdSchema = () => {
@@ -303,17 +306,74 @@ ting to fetch resource.`) {
       });
     },
 
+    /**
+      * _clear - Clear all local data from Kinto.js and asyncStorage.
+      * @param   {String} userid - The userid (xClientState) for whom to clear.
+      *                            Note that asyncStorage clear will be global.
+      * @returns {Promise}
+      */
+    _clear: function(userid) {
+      return new Promise(resolve => {
+        asyncStorage.clear(resolve);
+      }).then(() => {
+        var tmpKinto = new Kinto({
+          bucket: 'syncto',
+          dbPrefix: userid
+        });
+        var collectionsToClear = ['meta', 'crypto', 'history', 'bookmarks'];
+        return Promise.all(collectionsToClear.map(collectionName => {
+          return tmpKinto.collection(collectionName).clear();
+        }));
+      });
+    },
+
+    /**
+      * _handleClear - Check if a DataStore was cleared, call this._clear with
+      *                the previous userid, if needed, and set new userid.
+      * @returns {Promise}
+      */
+    _handleClear: function() {
+      const checkDataStore = (dsName) => {
+        return navigator.getDataStores(dsName).then(stores => {
+          // Check if the last operation on this DS was a clear operation.
+          return stores[0].sync().next().then(task => {
+            if (task.operation === 'clear') {
+              return new Promise(resolve => {
+                asyncStorage.getItem(SYNC_USERID, resolve);
+              }).then(previousUserid => {
+                return this._clear(previousUserid);
+              }).then(() => {
+                return true;
+              });
+            }
+            return false;
+          });
+        });
+      };
+      return checkDataStore('bookmarks').then(wasCleared => {
+        if (!wasCleared) {
+          return checkDataStore('history');
+        }
+      });
+    },
+
     _ensureReady: function() {
       if (this._ready) {
         return Promise.resolve();
       }
       return generateXClientState(this._kB).then(xClientState => {
         this._kinto = this._createKinto({
-           URL: this._URL,
-           assertion: this._assertion,
-           xClientState
-         });
-         this._xClientState = xClientState;
+          URL: this._URL,
+          assertion: this._assertion,
+          xClientState
+        });
+        this._xClientState = xClientState;
+      }).then(() => {
+        return this._handleClear();
+      }).then(() => {
+        return new Promise(resolve => {
+          asyncStorage.setItem(SYNC_USERID, this._xClientState, resolve);
+        });
       }).then(() => {
         return this._syncCollection('meta');
       }).then(() => {
