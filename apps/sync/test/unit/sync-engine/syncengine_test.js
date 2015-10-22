@@ -18,6 +18,7 @@
   suiteTeardown,
   SyncEngine,
   SynctoServerFixture,
+  SYNC_USERID,
   test
 */
 
@@ -173,6 +174,78 @@ ld be a Function`);
       se.syncNow({ history: {} }).then(function() {
         expect(se._kinto.options.dbPrefix).to.equal(
             SynctoServerFixture.xClientState);
+        done();
+      });
+    });
+
+    test('sets xClientState as SYNC_USERID in AsyncStorage', function(done) {
+      var asyncStorageSpy = this.sinon.spy(window.asyncStorage, 'setItem');
+      var se = new SyncEngine(SynctoServerFixture.syncEngineOptions);
+      se.syncNow({ history: {} }).then(function() {
+        expect(asyncStorageSpy.calledWith(SYNC_USERID,
+            SynctoServerFixture.xClientState)).to.equal(true);
+        done();
+      });
+    });
+
+    ['history', 'bookmarks'].forEach(store => {
+      test(`Clears old data after ${store} DS was cleared`, function(done) {
+        new Promise(resolve => {
+          console.log('clear');
+          window.asyncStorage.clear(() => {
+            console.log('set');
+            window.asyncStorage.setItem('foo', 'bar', () => {
+              console.log('set');
+              window.asyncStorage.setItem(SYNC_USERID, 'previousUser', () => {
+                console.log('resolve');
+                resolve();
+              });
+            });
+          });
+        }).then(() => {
+          console.log('then');
+          // var asClearSpy = this.sinon.spy(window.asyncStorage, 'clear');
+          var realGetDataStores = navigator.getDataStores;
+          console.log('mocking');
+          // navigator.getDataStores = function(dsName) {
+          //   console.log('mocked getDataStores', dsName);
+          //   var ds = new MockDatastoreObj();
+          //   console.log('constructing DS for ', dsName);
+          //   if (dsName === store) {
+          //     ds._tasks = [
+          //       {
+          //         operation: 'clear',
+          //         id: 0,
+          //         data: {}
+          //       },
+          //       {
+          //         operation: 'done',
+          //         id: 0,
+          //         data: {}
+          //       },
+          //     ];
+          //   }
+          //   return Promise.resolve([ ds ]);
+          // };
+          console.log('constructing');
+          var se = new SyncEngine(SynctoServerFixture.syncEngineOptions);
+          console.log('syncing');
+          se.syncNow({ history: {} }).then(function() {
+            // expect(asyncStorageSpy.calledWith(SYNC_USERID,
+            //     SynctoServerFixture.xClientState)).to.equal(true);
+                navigator.getDataStores = realGetDataStores;
+            done();
+          });
+        });
+      });
+    });
+
+    test(`Does not clear old data if no DS was cleared`, function(done) {
+      var asyncStorageSpy = this.sinon.spy(window.asyncStorage, 'setItem');
+      var se = new SyncEngine(SynctoServerFixture.syncEngineOptions);
+      se.syncNow({ history: {} }).then(function() {
+        expect(asyncStorageSpy.calledWith(SYNC_USERID,
+            SynctoServerFixture.xClientState)).to.equal(true);
         done();
       });
     });

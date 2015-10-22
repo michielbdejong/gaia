@@ -313,6 +313,7 @@ ting to fetch resource.`) {
       * @returns {Promise}
       */
     _clear: function(userid) {
+      console.log('clear', userid);
       return new Promise(resolve => {
         asyncStorage.clear(resolve);
       }).then(() => {
@@ -333,6 +334,7 @@ ting to fetch resource.`) {
       * @returns {Promise}
       */
     _handleClear: function() {
+      console.log('_handleClear');
       const checkDataStore = (dsName) => {
         return navigator.getDataStores(dsName).then(stores => {
           // Check if the last operation on this DS was a clear operation.
@@ -343,9 +345,11 @@ ting to fetch resource.`) {
               }).then(previousUserid => {
                 return this._clear(previousUserid);
               }).then(() => {
+                console.log('check', dsName, true);
                 return true;
               });
             }
+            console.log('check', dsName, false);
             return false;
           });
         });
