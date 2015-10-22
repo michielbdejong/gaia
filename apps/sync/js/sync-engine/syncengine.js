@@ -254,7 +254,7 @@ uld be a Function`);
 
       return collection.sync().then(syncResults => {
         if (syncResults.ok) {
-          return syncResults;
+          return syncResults; 
         }
         return Promise.reject(new SyncEngine.UnrecoverableError('SyncResults',
             collectionName, syncResults));
@@ -336,7 +336,9 @@ ting to fetch resource.`) {
     _handleClear: function() {
       console.log('_handleClear');
       const checkDataStore = (dsName) => {
+        console.log('getting');
         return navigator.getDataStores(dsName).then(stores => {
+          console.log('stores', stores);
           // Check if the last operation on this DS was a clear operation.
           return stores[0].sync().next().then(task => {
             if (task.operation === 'clear') {
