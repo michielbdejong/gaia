@@ -21,8 +21,7 @@
 
 /* global
   asyncStorage,
-  DataAdapters,
-  LazyLoader
+  DataAdapters
 */
 
 const HISTORY_COLLECTION_MTIME = '::collections::history::mtime';
@@ -290,10 +289,8 @@ DataAdapters.history = {
       console.warn('Two-way sync not implemented yet for bookmarks.');
     }
     var mtime;
-    return LazyLoader.load(['shared/js/async_storage.js'])
-    .then(() => {
-      return HistoryHelper.getSyncedCollectionMtime(options.userid);
-    }).then(_mtime => {
+    return HistoryHelper.getSyncedCollectionMtime(options.userid)
+    .then(_mtime => {
       mtime = _mtime;
       return remoteHistory.list();
     }).then(list => {

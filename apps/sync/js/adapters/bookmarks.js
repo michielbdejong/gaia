@@ -26,8 +26,7 @@
 
 /* global
   asyncStorage,
-  DataAdapters,
-  LazyLoader
+  DataAdapters
 */
 
 const BOOKMARKS_COLLECTION_MTIME = '::collections::bookmarks::mtime';
@@ -342,10 +341,8 @@ DataAdapters.bookmarks = {
       console.warn('Two-way sync not implemented yet for bookmarks.');
     }
     var mtime;
-    return LazyLoader.load(['shared/js/async_storage.js'])
-    .then(() => {
-      return BookmarksHelper.getSyncedCollectionMtime(options.userid);
-    }).then(_mtime => {
+    return BookmarksHelper.getSyncedCollectionMtime(options.userid)
+    .then(_mtime => {
       mtime = _mtime;
       return remoteBookmarks.list();
     }).then(list => {

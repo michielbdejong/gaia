@@ -8,13 +8,21 @@
   expect,
   FxSyncWebCrypto,
   Kinto,
+  MockasyncStorage,
+  MockNavigatorDatastore,
+  require,
   requireApp,
   setup,
   suite,
+  suiteSetup,
+  suiteTeardown,
   SyncEngine,
   SynctoServerFixture,
   test
 */
+
+require('/shared/test/unit/mocks/mock_navigator_datastore.js');
+require('/apps/system/test/unit/mock_asyncStorage.js');
 
 requireApp('sync/test/unit/sync-engine/adapter-mock.js');
 requireApp('sync/test/unit/fixtures/synctoserver.js');
@@ -27,9 +35,26 @@ var cloneObject = (obj) => {
 };
 
 suite('SyncEngine', function() {
+  var realDatastore, realAsyncStorage;
+
   // NB: this.timeout only works when passing ES5-style functions to all suites
   // and tests, see https://github.com/mochajs/mochajs.github.io/pull/14
   this.timeout(500);
+
+  suiteSetup(function() {
+    realAsyncStorage = window.asyncStorage;
+    window.asyncStorage = MockasyncStorage;
+
+    realDatastore = navigator.getDataStores;
+    navigator.getDataStores = MockNavigatorDatastore.getDataStores;
+  });
+
+  suiteTeardown(function() {
+    navigator.getDataStores = realDatastore;
+    window.asyncStorage.mTeardown();
+    window.asyncStorage = realAsyncStorage;
+  });
+
   suite('constructor', function() {
     test('constructs a SyncEngine object', function(done) {
       const options = SynctoServerFixture.syncEngineOptions;
