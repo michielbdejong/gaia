@@ -101,7 +101,7 @@ var SyncBookmark = (function () {
       return syncDataStore.clear();
     }).then(() => {
       syncDataStore = null;
-      return SyncBrowserDB.clearHistoryDeep();
+      return SyncBrowserDB.clearBookmarks();
     });
   }
 

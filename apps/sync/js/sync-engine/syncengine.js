@@ -356,9 +356,9 @@ ting to fetch resource.`) {
           });
         });
       };
-      return checkDataStore('bookmarks').then(wasCleared => {
+      return checkDataStore('bookmarks_store').then(wasCleared => {
         if (!wasCleared) {
-          return checkDataStore('history');
+          return checkDataStore('places');
         }
       });
     },
