@@ -368,15 +368,15 @@ ting to fetch resource.`) {
         return Promise.resolve();
       }
       return generateXClientState(this._kB).then(xClientState => {
-        this._kinto = this._createKinto({
-          URL: this._URL,
-          assertion: this._assertion,
-          xClientState
-        });
         this._xClientState = xClientState;
       }).then(() => {
         return this._handleClear();
       }).then(() => {
+        this._kinto = this._createKinto({
+          URL: this._URL,
+          assertion: this._assertion,
+          xClientState: this._xClientState
+        });
         return new Promise(resolve => {
           asyncStorage.setItem(SYNC_USERID, this._xClientState, resolve);
         });
