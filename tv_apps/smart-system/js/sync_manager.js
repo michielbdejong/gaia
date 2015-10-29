@@ -671,6 +671,7 @@
 
     doSync(assertion, keys, collections) {
       this.debug('Syncing with', JSON.stringify(collections));
+      dump('[SYNCONBOOT] doSync sending request...\n');
       this.iacRequest({
         name: 'sync',
         URL: this.settings.get('sync.server.url'),
@@ -678,6 +679,7 @@
         keys: keys,
         collections: collections
       }).then(result => {
+        dump('[SYNCONBOOT] doSync request completed: ' + JSON.stringify(result) + '\n');
         if (result && result.error) {
           var error = result.error;
           error = error.message ? error.message : error;

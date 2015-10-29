@@ -102,6 +102,7 @@ const Bootstrap = (() => {
   };
 
   window.addEventListener('iac-gaia::sync::request', event => {
+    dump('[SYNCONBOOT] iac-gaia::sync::request received in sync app: ' + JSON.stringify(event) + '\n');
     if (!event || !event.detail || !event.detail.id) {
       console.error('Wrong IAC request');
       window.close();
@@ -112,11 +113,13 @@ const Bootstrap = (() => {
     switch (request.name) {
       case 'sync':
         handleSyncRequest(request).then(() => {
+          dump('[SYNCONBOOT] success: ' + JSON.stringify(request) + '\n');
           sendPortMessage({
             id: request.id
           });
           window.close();
         }).catch(error => {
+          dump('[SYNCONBOOT] error: ' + JSON.stringify(request) + ' error: ' + JSON.stringify(error) + '\n');
           sendPortMessage({
             id: request.id,
             error: error
