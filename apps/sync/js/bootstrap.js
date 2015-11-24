@@ -54,8 +54,8 @@ const Bootstrap = (() => {
     if ((typeof request !== 'object') ||
         (typeof request.URL !== 'string') ||
         (typeof request.assertion !== 'string') ||
-        (typeof request.keys !== 'object') ||
-        (typeof request.keys.kB !== 'string') ||
+        (((typeof request.keys !== 'object') ||
+         (typeof request.keys.kB !== 'string')) && !request.generateKeys)
         (typeof request.collections !== 'object')) {
       return loadErrorConstants().then(() => {
         throw new Error(ERROR_SYNC_INVALID_REQUEST_OPTIONS);
@@ -76,15 +76,19 @@ const Bootstrap = (() => {
       }));
     }).then(() => {
       var syncEngine = new SyncEngine({
-        kB: request.keys.kB,
+        generateKeys: request.generateKeys,
+        kB: request.generateKeys? null : request.keys.kB,
         URL: request.URL,
         assertion: request.assertion,
         adapters: DataAdapters
       });
 
-      return syncEngine.syncNow(request.collections);
-    }).then(() => {
-      running = false;
+      return syncEngine.syncNow(request.collections).then(() => {
+        running = false;
+        if (request.generateKeys) {
+          return syncEngine.getKeys();
+        }
+      });
     }).catch(err => {
       running = false;
       throw err;
@@ -110,9 +114,10 @@ const Bootstrap = (() => {
     const request = event.detail;
     switch (request.name) {
       case 'sync':
-        handleSyncRequest(request).then(() => {
+        handleSyncRequest(request).then(response => {
           sendPortMessage({
-            id: request.id
+            id: request.id,
+            response
           });
           window.close();
         }).catch(error => {

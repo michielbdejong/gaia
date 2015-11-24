@@ -229,6 +229,37 @@ for collection ${collectionName}`);
     });
   };
 
+
+  const generateKeys = () => {
+    // Generate a random key material using the PRNG of the device.
+    var keysToGenerate = {
+      kA: 64,
+      kB: 64,
+      defaultAes: 32,
+      defaultHmac: 32
+    };
+    var keysRaw = {};
+    for(var key in keysToGenerate) {
+      keysRaw[key] = new Uint8Array(keysToGenerate[key]);
+      crypto.getRandomValues(keysRaw[key]);
+    }
+    var bulkKeyBundleClearText = JSON.stringify({
+      default: {
+        aes: StringConversion.uint8ArrayToBase64String(keysRaw.defaultAes),
+        hmac: StringConversion.uint8ArrayToBase64String(keysRaw.defaultHmac)
+      }
+    });
+    return importKb(keysRaw.kB).then(kBBundle => {
+        return encryptAndSign(kBBundle, bulkKeyBundleClearText);
+    }).then(bundleEncRaw => {
+      return {
+        kA: StringConversion.uint8ArrayToBase64String(keysRaw.kA),
+        kB: StringConversion.uint8ArrayToBase64String(keysRaw.kB),
+        bundle: StringConversion.uint8ArrayToBase64String(bundleEncRaw)
+      };
+    });
+  };
+
   const encryptAndSign = (keyBundle, cleartext) => {
     // Generate a random IV using the PRNG of the device.
     var IV = new Uint8Array(16);
@@ -299,6 +330,8 @@ ${collectionName} - did you call setKeys?`));
     decrypt: decrypt,
     encrypt: encrypt
   });
+
+  FxSyncWebCrypto.generateKeys = generateKeys;
 
   // Expose this for unit test:
   FxSyncWebCrypto.importKeyBundle = Object.freeze(importKeyBundle);

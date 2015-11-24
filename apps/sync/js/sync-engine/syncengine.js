@@ -157,11 +157,15 @@ var SyncEngine = (function() {
     if (typeof options !== 'object') {
       throw new Error('options should be an Object');
     }
-    ['URL', 'assertion', 'kB'].forEach(field => {
+    ['URL', 'assertion'].forEach(field => {
       if (typeof options[field] !== 'string') {
         throw new Error(`options.${field} should be a String`);
       }
     });
+    if (typeof options.kB !== 'string' && !options.generateKeys) {
+      throw new Error(`if options.generateKeys is false, options.kB should be a\
+ String`);
+    }
     if (typeof options.adapters !== 'object') {
       throw new Error('options.adapters should be an Object');
     }
@@ -179,7 +183,7 @@ uld be a Function`);
       });
     }
 
-    ['kB', 'assertion', 'URL', 'adapters'].forEach(field => {
+    ['generateKeys', 'kB', 'assertion', 'URL', 'adapters'].forEach(field => {
       this[`_${field}`] = options[field];
     });
 
@@ -328,11 +332,24 @@ uld be a Function`);
       });
     },
 
+    _ensureKeys: function(generate) {
+      if (!generate) {
+        return Promise.resolve();
+      }
+      return FxSyncWebCrypto.generateKeys().then(keys => {
+        this.kA = keys.kA;
+        this.kB = keys.kB;
+        this.bulkKeyBundle = keys.bulkKeyBundle;
+      });
+    },
+
     _ensureReady: function() {
       if (this._ready) {
         return Promise.resolve();
       }
-      return generateXClientState(this._kB).then(xClientState => {
+      return this._ensureKeys(this.generateKeys).then(() => {
+        return generateXClientState(this._kB);
+      }).then(xClientState => {
         this._kinto = this._createKinto({
            URL: this._URL,
            assertion: this._assertion,
@@ -426,6 +443,13 @@ ccount`);
           return promiseWaterfall(this, tasks, this._updateCollection);
         });
       });
+    },
+
+    getKeys: function() {
+      return {
+        kA: this.kA,
+        kB: this.kB
+      };
     }
   };
 
