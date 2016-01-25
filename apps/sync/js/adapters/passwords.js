@@ -8,7 +8,7 @@
 const PASSWORD_LAST_SYNC = '::collections::passwords::last_sync';
 const PASSWORD_KEYS_KEY = '::collections::passwords::keys';
 
-var PassWordHelper = (() => {
+var PasswordHelper = (() => {
   var _store = null;
 
   function _ensureStore() {
@@ -54,6 +54,14 @@ var PassWordHelper = (() => {
   }
 
   /**
+   * To identify a password record we will use a combination
+   * of the hostname and form where it's applied.
+   */
+  function getRecordKey(pw) {
+    return pw.payload.hostname + '_' + pw.payload.formSubmitURL;
+  }
+
+  /**
    * Given a password entry, add or modify our current copy.
    * The current entry that we will get from kinto looks like:
    * {
@@ -76,7 +84,7 @@ var PassWordHelper = (() => {
 
       We will keep entries with the same format, and the key
       to recover it locally will be a combination of entry id
-      and user id: <userId><entry.id>
+      and password key (see function above): <userId><pw key>
 
       We also keep a list with all the keys for an specific user
       in a KNOW record in the Datastore.
@@ -86,11 +94,11 @@ var PassWordHelper = (() => {
       return Promise.resolve(false);
     }
 
-    var key = userId + password.id;
+    var key = userId + getRecordKey(password);
     return _ensureStore().then((store) => {
       return store.put(password, key);
     }).then(() => {
-      console.log('------------------------->>> made the put to the datastore');
+      console.log('------------------------->>> made the put to the datastore for key ', key);
       return getKeysForUser(userId);
     }).then((keys) => {
         if (keys.indexOf(key) > 0) {
@@ -122,16 +130,51 @@ var PassWordHelper = (() => {
 
   function setKeysForUser(userId, keys) {
     var key = userId + PASSWORD_KEYS_KEY;
-    return _ensureStore().then((store) =>{
+    return _ensureStore().then((store) => {
       return store.put(keys, key);
     });
+  }
+
+  function applyModifications(userId, passwordsList) {
+    var updateOrCreate = [];
+    var remove = [];
+
+    passwordsList.forEach((pwEntry) => {
+      if (pwEntry.payload.deleted) {
+        remove.push(pwEntry);
+      } else {
+        updateOrCreate(pwEntry);
+      }
+    });
+
+    var ops = [
+      updateLocalPasswords(userId, updateOrCreate),
+      removeLocalPasswords(userId, remove);
+    ];
+
+    var now = Date.now();
+    return Promise.all(ops).then(() => {
+      return setLastSync(userId, now);
+    });
+  }
+
+  function removeLocalPasswords(userId, passwords) {
+    if (!userid || !Array.isArray(passwords)) {
+      return Promise.resolve(false);
+    }
+
+    if (passwords.length == 0) {
+      return Promise.resolve(true);
+    }
+
+    return Promise.resolve(true);
   }
 
   return {
     getLastSync,
     setLastSync,
     clearLastSync,
-    updateLocalPasswords
+    applyModifications
   };
 })();
 
@@ -142,11 +185,18 @@ DataAdapters.passwords = {
     }
 
     return passwordsCollection.list().then((list) => {
-      return PassWordHelper.getLastSync(options.userid).then((lastSync) => {
-        var passwordList = list.data;
+      console.log('-------->>> USER ID IS ', options.userid);
+      return PasswordHelper.getLastSync(options.userid).then((lastSync) => {
+        var passwordList = list.data.sort((a, b) => {
+          return b.last_modified - a.last_modified;
+        });
         console.log('Last sync happened at ', lastSync);
-        var lastSyncIndex = passwordList.reverse().findIndex((item) => {
-          console.log('-----> checking against ', JSON.stringify(item));
+        // passwordList.forEach(pw => {
+        //   console.log('====');
+        //   console.log(JSON.stringify(pw));
+        // });
+        var lastSyncIndex = passwordList.findIndex((item) => {
+          //console.log('-----> checking against ', JSON.stringify(item));
           return lastSync > item.last_modified;
         });
         console.log('-----> last sync index is ', lastSyncIndex, 'with ', passwordList.length);
@@ -156,7 +206,10 @@ DataAdapters.passwords = {
         return passwordList.slice(0, lastSyncIndex);
       }).then((modifications) => {
         console.log("List of modifications ---------->> ", modifications.length);
-        return PassWordHelper.updateLocalPasswords(options.userid, modifications);
+        modifications.forEach(mod => {
+          console.log(JSON.stringify(mod));
+        });
+        return PasswordHelper.applyModifications(options.userid, modifications);
       }).then((result) => {
         // Read only
         return Promise.resolve(false);
