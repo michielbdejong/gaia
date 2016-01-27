@@ -1,8 +1,9 @@
 'use strict';
 
 /* global 
+  asyncStorage,
   DataAdapters,
-  asyncStorage
+  LazyLoader
 */
 
 const PASSWORD_LAST_SYNC = '::collections::passwords::last_sync';
@@ -186,7 +187,9 @@ DataAdapters.passwords = {
       return Promise.resolve(false);
     }
 
-    return passwordsCollection.list().then((list) => {
+    return LazyLoader.load(['shared/js/async_storage.js']).then(() => {
+      return passwordsCollection.list();
+    }).then((list) => {
       console.log('-------->>> USER ID IS ', options.userid);
       return PasswordHelper.getLastSync(options.userid).then((lastSync) => {
         var passwordList = list.data.sort((a, b) => {
