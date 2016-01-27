@@ -415,6 +415,7 @@ ccount`);
       * @returns {Promise}
       */
     syncNow: function(collectionOptions) {
+      console.log('syncNow', collectionOptions);
       if (typeof collectionOptions !== 'object') {
         return Promise.reject(new Error(
             'collectionOptions should be an object'));

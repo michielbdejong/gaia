@@ -30,7 +30,8 @@ var PasswordHelper = (() => {
 
   function setLastSync(userId, when) {
     return new Promise((resolve) => {
-      console.log('-----> have to setup last sync at ', when, 'for ', asyncStorage);
+      console.log('-----> have to setup last sync at ',
+          when, 'for ', asyncStorage);
       asyncStorage.setItem(userId + PASSWORD_LAST_SYNC, when, resolve);
     });
   }
@@ -98,7 +99,8 @@ var PasswordHelper = (() => {
     return _ensureStore().then((store) => {
       return store.put(password, key);
     }).then(() => {
-      console.log('------------------------->>> made the put to the datastore for key ', key);
+      console.log('------------------------->>> made the put to the ' +
+          'datastore for key ', key);
       return getKeysForUser(userId);
     }).then((keys) => {
         if (keys.indexOf(key) > 0) {
@@ -149,7 +151,7 @@ var PasswordHelper = (() => {
 
     var ops = [
       updateLocalPasswords(userId, updateOrCreate),
-      removeLocalPasswords(userId, remove);
+      removeLocalPasswords(userId, remove)
     ];
 
     var now = Date.now();
@@ -159,11 +161,11 @@ var PasswordHelper = (() => {
   }
 
   function removeLocalPasswords(userId, passwords) {
-    if (!userid || !Array.isArray(passwords)) {
+    if (!userId || !Array.isArray(passwords)) {
       return Promise.resolve(false);
     }
 
-    if (passwords.length == 0) {
+    if (passwords.length === 0) {
       return Promise.resolve(true);
     }
 
@@ -199,13 +201,15 @@ DataAdapters.passwords = {
           //console.log('-----> checking against ', JSON.stringify(item));
           return lastSync > item.last_modified;
         });
-        console.log('-----> last sync index is ', lastSyncIndex, 'with ', passwordList.length);
+        console.log('-----> last sync index is ', lastSyncIndex,
+            'with ', passwordList.length);
         if (lastSyncIndex < 0) {
           lastSyncIndex = passwordList.length + 1;
         }
         return passwordList.slice(0, lastSyncIndex);
       }).then((modifications) => {
-        console.log("List of modifications ---------->> ", modifications.length);
+        console.log('List of modifications ---------->> ',
+            modifications.length);
         modifications.forEach(mod => {
           console.log(JSON.stringify(mod));
         });
@@ -238,4 +242,4 @@ DataAdapters.passwords = {
   reset: function(options) {
     return Promise.resolve(`Reset passwords for ${options.userid}.`);
   }
-}
+};
